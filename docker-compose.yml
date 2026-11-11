@@ -2,7 +2,7 @@
 # La configuration Coolify et les clés sont conservées dans /data/coolify/source/.env.
 services:
   coolify:
-    image: docker.io/coollabsio/coolify:${COOLIFY_VERSION:-4.7.5}
+    image: docker.io/coollabsio/coolify:latest
     container_name: coolify
     restart: unless-stopped
     working_dir: /var/www/html
@@ -45,7 +45,7 @@ services:
       start_period: 1m
       timeout: 2s
   postgres:
-    image: postgres:15-alpine
+    image: postgres:latest
     container_name: coolify-db
     restart: unless-stopped
     environment:
@@ -61,7 +61,7 @@ services:
       retries: 10
       timeout: 2s
   redis:
-    image: redis:7-alpine
+    image: redis:latest
     container_name: coolify-redis
     restart: unless-stopped
     environment:
@@ -77,7 +77,7 @@ services:
       timeout: 2s
   # Profil optionnel : Docker dédié aux agents, sans socket Docker de l'hôte.
   agent-docker:
-    image: docker:28-dind-rootless
+    image: docker:dind-rootless
     profiles: [agents]
     restart: unless-stopped
     privileged: true
@@ -108,7 +108,7 @@ services:
       retries: 3
       start_period: 90s
   beszel:
-    image: henrygd/beszel:0.21.1
+    image: henrygd/beszel:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:${BESZEL_PORT:-8002}:8090"
@@ -122,7 +122,7 @@ services:
       retries: 3
       start_period: 15s
   beszel-agent:
-    image: henrygd/beszel-agent:0.21.1
+    image: henrygd/beszel-agent:latest
     profiles: [monitoring-agent]
     restart: unless-stopped
     environment:
