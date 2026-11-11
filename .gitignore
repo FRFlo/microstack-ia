@@ -1,0 +1,15 @@
+# Configuration locale et secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Sauvegardes et données locales
+backups/
+data/
+
+# Éditeurs et système
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,11 @@
+name: Proposer une amélioration
+description: Décrivez votre besoin et le résultat attendu.
+title: "[Idée] "
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Besoin
+      description: Quel problème souhaitez-vous résoudre ?
+    validations:
+      required: true

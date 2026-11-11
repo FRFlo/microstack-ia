@@ -1,0 +1,15 @@
+# Optionnel : route T3 Code sur le proxy Traefik géré par Coolify.
+# À utiliser seulement après avoir activé le proxy et configuré DNS et OAuth.
+services:
+  t3code:
+    networks:
+      - agent-control
+      - coolify
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: coolify
+      traefik.http.routers.microstack-t3.rule: "Host(`${T3CODE_DOMAIN:-t3.${BASE_DOMAIN:-example.invalid}}`)"
+      traefik.http.routers.microstack-t3.entrypoints: https
+      traefik.http.routers.microstack-t3.tls: "true"
+      traefik.http.routers.microstack-t3.tls.certresolver: "${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      traefik.http.services.microstack-t3.loadbalancer.server.port: "3773"

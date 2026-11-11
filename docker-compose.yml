@@ -1,0 +1,158 @@
+# Adapté de Coolify v4.7.5 (Apache-2.0), docker-compose.yml et docker-compose.prod.yml.
+# La configuration Coolify et les clés sont conservées dans /data/coolify/source/.env.
+services:
+  coolify:
+    image: docker.io/coollabsio/coolify:${COOLIFY_VERSION:-4.7.5}
+    container_name: coolify
+    restart: unless-stopped
+    working_dir: /var/www/html
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    env_file:
+      - /data/coolify/source/.env
+    environment:
+      APP_ENV: production
+      PHP_MEMORY_LIMIT: 256M
+      PUSHER_BACKEND_PORT: 6001
+    ports:
+      - "127.0.0.1:${APP_PORT:-8000}:8080"
+      - "127.0.0.1:${REVERB_PORT:-6001}:6001"
+      - "127.0.0.1:6002:6002"
+    expose:
+      - "6001"
+      - "6002"
+    volumes:
+      - /data/coolify/source/.env:/var/www/html/.env:ro
+      - /data/coolify/ssh:/var/www/html/storage/app/ssh
+      - /data/coolify/applications:/var/www/html/storage/app/applications
+      - /data/coolify/databases:/var/www/html/storage/app/databases
+      - /data/coolify/services:/var/www/html/storage/app/services
+      - /data/coolify/backups:/var/www/html/storage/app/backups
+      - /data/coolify/images:/var/www/html/storage/app/images
+    networks:
+      coolify:
+        aliases:
+          - coolify-realtime
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://127.0.0.1:8080/api/health && curl --fail http://127.0.0.1:6001/up || exit 1"]
+      interval: 5s
+      retries: 24
+      start_period: 1m
+      timeout: 2s
+  postgres:
+    image: postgres:15-alpine
+    container_name: coolify-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:?DB_USERNAME requis}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD requis}
+      POSTGRES_DB: ${DB_DATABASE:-coolify}
+    volumes:
+      - coolify-db:/var/lib/postgresql/data
+    networks: [coolify]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      retries: 10
+      timeout: 2s
+  redis:
+    image: redis:7-alpine
+    container_name: coolify-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD requis}
+    command: ["sh", "-c", "exec redis-server --save 20 1 --loglevel warning --requirepass \"$$REDIS_PASSWORD\""]
+    volumes:
+      - coolify-redis:/data
+    networks: [coolify]
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 5s
+      retries: 10
+      timeout: 2s
+  # Profil optionnel : Docker dédié aux agents, sans socket Docker de l'hôte.
+  agent-docker:
+    image: docker:28-dind-rootless
+    profiles: [agents]
+    restart: unless-stopped
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+      DOCKERD_ROOTLESS_ROOTLESSKIT_FLAGS: "-p 0.0.0.0:2375:2375/tcp"
+    command: ["dockerd", "--host=tcp://0.0.0.0:2375", "--host=unix:///run/user/1000/docker.sock"]
+    volumes:
+      - agent-docker-data:/home/rootless/.local/share/docker
+    networks: [agent-control]
+  t3code:
+    build:
+      context: .
+      dockerfile: docker/t3code/Dockerfile
+    profiles: [agents]
+    restart: unless-stopped
+    depends_on:
+      - agent-docker
+    ports:
+      - "127.0.0.1:${T3CODE_PORT:-8021}:3773"
+    volumes:
+      - t3code-data:/data/userdata
+      - t3code-workspace:/data/workspace
+      - t3code-home:/home/node
+    networks: [agent-control]
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3773',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+  beszel:
+    image: henrygd/beszel:0.21.1
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${BESZEL_PORT:-8002}:8090"
+    volumes:
+      - beszel-data:/beszel_data
+    networks: [monitoring]
+    healthcheck:
+      test: ["CMD", "/beszel", "health", "--url", "http://127.0.0.1:8090"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+  beszel-agent:
+    image: henrygd/beszel-agent:0.21.1
+    profiles: [monitoring-agent]
+    restart: unless-stopped
+    environment:
+      KEY: ${BESZEL_AGENT_KEY:-}
+    volumes:
+      - beszel-agent-data:/var/lib/beszel-agent
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [monitoring]
+    healthcheck:
+      test: ["CMD", "/agent", "health"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+volumes:
+  agent-docker-data: {}
+  t3code-data: {}
+  t3code-home: {}
+  t3code-workspace: {}
+  beszel-data: {}
+  beszel-agent-data: {}
+  coolify-db:
+    name: coolify-db
+  coolify-redis:
+    name: coolify-redis
+networks:
+  agent-control: {}
+  monitoring: {}
+  coolify:
+    name: coolify
+    driver: bridge
