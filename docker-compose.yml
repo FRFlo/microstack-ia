@@ -75,32 +75,17 @@ services:
       interval: 5s
       retries: 10
       timeout: 2s
-  # Profil optionnel : Docker dédié aux agents, sans socket Docker de l'hôte.
-  agent-docker:
-    image: docker:dind-rootless
-    profiles: [agents]
-    restart: unless-stopped
-    privileged: true
-    environment:
-      DOCKER_TLS_CERTDIR: ""
-      DOCKERD_ROOTLESS_ROOTLESSKIT_FLAGS: "-p 0.0.0.0:2375:2375/tcp"
-    command: ["dockerd", "--host=tcp://0.0.0.0:2375", "--host=unix:///run/user/1000/docker.sock"]
-    volumes:
-      - agent-docker-data:/home/rootless/.local/share/docker
-    networks: [agent-control]
   t3code:
     image: ghcr.io/dizys/t3code-docker:latest
     profiles: [agents]
     restart: unless-stopped
-    depends_on:
-      - agent-docker
     ports:
       - "127.0.0.1:${T3CODE_PORT:-8021}:3773"
     volumes:
       - t3code-data:/data/userdata
       - t3code-workspace:/data/workspace
       - t3code-home:/home/node
-    networks: [agent-control]
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3773',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
       interval: 30s
@@ -138,7 +123,6 @@ services:
       retries: 3
       start_period: 15s
 volumes:
-  agent-docker-data: {}
   t3code-data: {}
   t3code-home: {}
   t3code-workspace: {}
@@ -149,7 +133,6 @@ volumes:
   coolify-redis:
     name: coolify-redis
 networks:
-  agent-control: {}
   monitoring: {}
   coolify:
     name: coolify
