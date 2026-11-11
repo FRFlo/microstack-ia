@@ -89,9 +89,7 @@ services:
       - agent-docker-data:/home/rootless/.local/share/docker
     networks: [agent-control]
   t3code:
-    build:
-      context: .
-      dockerfile: docker/t3code/Dockerfile
+    image: ghcr.io/dizys/t3code-docker:latest
     profiles: [agents]
     restart: unless-stopped
     depends_on:
