@@ -10,7 +10,7 @@ Stack auto-hébergée déployée depuis Git avec Dockhand, Beszel pour la superv
 | --- | --- |
 | `docker-compose.dockhand.yml` | Dockhand seul, pour le démarrage initial sur le serveur. |
 | `scripts/deploy-dockhand.sh` | Démarrage initial de Dockhand via SSH. |
-| `docker-compose.yml` | Beszel et profils facultatifs pour T3 Code et l’agent Beszel ; à ajouter dans Dockhand depuis Git. |
+| `docker-compose.yml` | Coolify, PostgreSQL, Redis, Beszel et profils facultatifs ; à ajouter dans Dockhand depuis Git. |
 | `docs/exploitation.md` | Supervision, accès réseau et sauvegardes. |
 
 Les images tierces ont leurs propres licences.
@@ -30,17 +30,17 @@ cd microstack-ia
 sudo ./scripts/deploy-dockhand.sh
 ```
 
-Dockhand écoute uniquement sur `127.0.0.1:3000`. Depuis un second terminal local, ouvrir le tunnel SSH :
+Le script prépare aussi les secrets et dossiers de Coolify sous `/data/coolify`. Sauvegarder `/data/coolify/source/.env` hors du serveur. Dockhand écoute uniquement sur `127.0.0.1:8000`. Depuis un second terminal local, ouvrir les tunnels SSH :
 
 ```sh
-ssh -L 3000:127.0.0.1:3000 utilisateur@serveur
+ssh -L 8000:127.0.0.1:8000 -L 8001:127.0.0.1:8001 -L 8002:127.0.0.1:8002 utilisateur@serveur
 ```
 
-Ouvrir `http://localhost:3000`, créer le compte administrateur, puis ajouter la stack depuis le dépôt Git et choisir `docker-compose.yml`. Dockhand déploiera et mettra ensuite à jour la stack selon sa configuration Git. Le volume `dockhand-data` conserve sa configuration.
+Ouvrir `http://localhost:8000`, créer le compte administrateur, puis ajouter la stack depuis le dépôt Git et choisir `docker-compose.yml`. Coolify sera accessible sur `http://localhost:8001` et Beszel sur `http://localhost:8002`. Dockhand déploiera et mettra ensuite à jour la stack selon sa configuration Git. Le volume `dockhand-data` conserve sa configuration.
 
 ## T3 Code et agents
 
-Définir `COMPOSE_PROFILES=agents` dans les variables de la stack Dockhand pour démarrer T3 Code. Ajouter `-L 8021:127.0.0.1:8021` au tunnel SSH pour y accéder. Les instructions d'appairage figurent dans les journaux de T3 Code. Ouvrir une console dans le conteneur T3 Code depuis Dockhand et lancer la connexion souhaitée :
+Définir `COMPOSE_PROFILES=agents` dans les variables de la stack Dockhand pour démarrer T3 Code. Ajouter `-L 8003:127.0.0.1:8003` au tunnel SSH pour y accéder. Les instructions d'appairage figurent dans les journaux de T3 Code. Ouvrir une console dans le conteneur T3 Code depuis Dockhand et lancer la connexion souhaitée :
 
 ```sh
 codex login
