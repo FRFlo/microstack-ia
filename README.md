@@ -9,8 +9,6 @@ Socle auto-hébergé pour une entreprise : Coolify pour déployer des sites et a
 | Chemin | Rôle |
 | --- | --- |
 | `docker-compose.yml` | Coolify, PostgreSQL, Redis, Beszel et profils facultatifs pour T3 Code et l’agent Beszel. |
-| `docker-compose.t3-public.yml` | Route HTTPS facultative de T3 Code via le proxy Traefik de Coolify. |
-| `docker/t3code/Dockerfile` | Image simplifiée de T3 Code, Codex et Claude Code. |
 | `scripts/setup-secrets.sh` | Initialisation unique des secrets et des dossiers Coolify. |
 | `docs/exploitation.md` | Réseau, domaines, supervision, mises à jour et sauvegardes. |
 | `.github/` | Modèles de contribution GitHub. |
@@ -31,7 +29,7 @@ sudo docker compose --env-file /data/coolify/source/.env config
 sudo docker compose --env-file /data/coolify/source/.env up -d
 ```
 
-Le script refuse de remplacer une configuration existante et ne doit pas servir à reprendre une installation Coolify déjà présente. Il génère `/data/coolify/source/.env` ; sauvegardez ce fichier hors du serveur. La valeur `BASE_DOMAIN` y est à modifier : elle sert au nom public facultatif de T3 Code, mais **ne configure pas automatiquement les domaines des applications dans Coolify**. Les domaines et certificats sont configurés dans Coolify et dans le DNS ; voir [exploitation](docs/exploitation.md).
+Le script refuse de remplacer une configuration existante et ne doit pas servir à reprendre une installation Coolify déjà présente. Il génère `/data/coolify/source/.env` ; sauvegardez ce fichier hors du serveur. Les domaines et certificats des applications sont configurés dans Coolify et dans le DNS ; voir [exploitation](docs/exploitation.md).
 
 Les interfaces Coolify (`8000`) et Beszel (`8002`) écoutent uniquement sur l'interface locale du serveur. Pour un premier accès, ouvrez un tunnel SSH depuis votre poste :
 
@@ -56,7 +54,7 @@ sudo docker compose --env-file /data/coolify/source/.env --profile agents exec t
 sudo docker compose --env-file /data/coolify/source/.env --profile agents exec t3code claude auth login
 ```
 
-Suivre les instructions affichées, sans transmettre de code ou de secret dans une issue. Les identifiants sont conservés dans le volume personnel de T3 Code. T3 Code inclut un serveur MCP OAuth sur `/mcp`. L'accès est privé par défaut ; le [guide d'exploitation](docs/exploitation.md) décrit l'option HTTPS publique et ses limites.
+Suivre les instructions affichées, sans transmettre de code ou de secret dans une issue. Les identifiants sont conservés dans le volume personnel de T3 Code. T3 Code inclut un serveur MCP OAuth sur `/mcp`.
 
 ## État et commandes
 

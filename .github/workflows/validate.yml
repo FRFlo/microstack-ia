@@ -12,9 +12,8 @@ jobs:
       - name: Vérifier les scripts et le Compose
         run: |
           bash -n scripts/setup-secrets.sh
-          printf 'DB_USERNAME=coolify\nDB_PASSWORD=validation\nREDIS_PASSWORD=validation\nT3CODE_DOMAIN=t3.example.com\n' > /tmp/microstack-ci.env
+          printf 'DB_USERNAME=coolify\nDB_PASSWORD=validation\nREDIS_PASSWORD=validation\n' > /tmp/microstack-ci.env
           sed 's|/data/coolify/source/.env|/tmp/microstack-ci.env|g' docker-compose.yml > /tmp/microstack-ci.yml
           docker compose --env-file /tmp/microstack-ci.env -f /tmp/microstack-ci.yml config --quiet
           docker compose --env-file /tmp/microstack-ci.env -f /tmp/microstack-ci.yml --profile monitoring-agent config --quiet
           docker compose --env-file /tmp/microstack-ci.env -f /tmp/microstack-ci.yml --profile agents config --quiet
-          docker compose --env-file /tmp/microstack-ci.env -f /tmp/microstack-ci.yml -f docker-compose.t3-public.yml --profile agents config --quiet
