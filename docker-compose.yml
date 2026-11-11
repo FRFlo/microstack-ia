@@ -1,80 +1,4 @@
-# Adapté de Coolify v4.7.5 (Apache-2.0), docker-compose.yml et docker-compose.prod.yml.
-# La configuration Coolify et les clés sont conservées dans /data/coolify/source/.env.
 services:
-  coolify:
-    image: docker.io/coollabsio/coolify:latest
-    container_name: coolify
-    restart: unless-stopped
-    working_dir: /var/www/html
-    extra_hosts:
-      - host.docker.internal:host-gateway
-    env_file:
-      - /data/coolify/source/.env
-    environment:
-      APP_ENV: production
-      PHP_MEMORY_LIMIT: 256M
-      PUSHER_BACKEND_PORT: 6001
-    ports:
-      - "127.0.0.1:${APP_PORT:-8000}:8080"
-      - "127.0.0.1:${REVERB_PORT:-6001}:6001"
-      - "127.0.0.1:6002:6002"
-    expose:
-      - "6001"
-      - "6002"
-    volumes:
-      - /data/coolify/source/.env:/var/www/html/.env:ro
-      - /data/coolify/ssh:/var/www/html/storage/app/ssh
-      - /data/coolify/applications:/var/www/html/storage/app/applications
-      - /data/coolify/databases:/var/www/html/storage/app/databases
-      - /data/coolify/services:/var/www/html/storage/app/services
-      - /data/coolify/backups:/var/www/html/storage/app/backups
-      - /data/coolify/images:/var/www/html/storage/app/images
-    networks:
-      coolify:
-        aliases:
-          - coolify-realtime
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "curl --fail http://127.0.0.1:8080/api/health && curl --fail http://127.0.0.1:6001/up || exit 1"]
-      interval: 5s
-      retries: 24
-      start_period: 1m
-      timeout: 2s
-  postgres:
-    image: postgres:latest
-    container_name: coolify-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${DB_USERNAME:?DB_USERNAME requis}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD requis}
-      POSTGRES_DB: ${DB_DATABASE:-coolify}
-    volumes:
-      - coolify-db:/var/lib/postgresql/data
-    networks: [coolify]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
-      interval: 5s
-      retries: 10
-      timeout: 2s
-  redis:
-    image: redis:latest
-    container_name: coolify-redis
-    restart: unless-stopped
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD requis}
-    command: ["sh", "-c", "exec redis-server --save 20 1 --loglevel warning --requirepass \"$$REDIS_PASSWORD\""]
-    volumes:
-      - coolify-redis:/data
-    networks: [coolify]
-    healthcheck:
-      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
-      interval: 5s
-      retries: 10
-      timeout: 2s
   t3code:
     image: ghcr.io/dizys/t3code-docker:latest
     profiles: [agents]
@@ -128,12 +52,5 @@ volumes:
   t3code-workspace: {}
   beszel-data: {}
   beszel-agent-data: {}
-  coolify-db:
-    name: coolify-db
-  coolify-redis:
-    name: coolify-redis
 networks:
   monitoring: {}
-  coolify:
-    name: coolify
-    driver: bridge

@@ -9,11 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Vérifier les scripts et le Compose
+      - name: Vérifier le script et les fichiers Compose
         run: |
-          bash -n scripts/setup-secrets.sh
-          printf 'DB_USERNAME=coolify\nDB_PASSWORD=validation\nREDIS_PASSWORD=validation\n' > /tmp/microstack-ci.env
-          sed 's|/data/coolify/source/.env|/tmp/microstack-ci.env|g' docker-compose.yml > /tmp/microstack-ci.yml
-          docker compose --env-file /tmp/microstack-ci.env -f /tmp/microstack-ci.yml config --quiet
-          docker compose --env-file /tmp/microstack-ci.env -f /tmp/microstack-ci.yml --profile monitoring-agent config --quiet
-          docker compose --env-file /tmp/microstack-ci.env -f /tmp/microstack-ci.yml --profile agents config --quiet
+          bash -n scripts/deploy-dockhand.sh
+          docker compose -f docker-compose.dockhand.yml config --quiet
+          docker compose -f docker-compose.yml config --quiet
+          docker compose -f docker-compose.yml --profile monitoring-agent config --quiet
+          docker compose -f docker-compose.yml --profile agents config --quiet
