@@ -18,9 +18,9 @@ jobs:
           docker compose -f docker-compose.dockhand.yml config --quiet
           printf 'APP_ID=ci\nAPP_NAME=Coolify\nAPP_KEY=base64:validation\nDB_USERNAME=coolify\nDB_DATABASE=coolify\nDB_PASSWORD=validation\nDB_HOST=postgres\nDB_PORT=5432\nDB_CONNECTION=pgsql\nPOSTGRES_USER=coolify\nPOSTGRES_DB=coolify\nPOSTGRES_PASSWORD=validation\nREDIS_HOST=redis\nREDIS_PASSWORD=validation\nQUEUE_CONNECTION=redis\nPUSHER_APP_ID=validation\nPUSHER_APP_KEY=validation\nPUSHER_APP_SECRET=validation\n' > /tmp/microstack-coolify.env
           sudo mkdir -p /data/coolify/source
-          sudo install -m 600 /tmp/microstack-coolify.env /data/coolify/source/.env
+          sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /tmp/microstack-coolify.env /data/coolify/source/.env
           printf 'PUID=1000\nPGID=1000\n' > /tmp/microstack-t3code.env
-          sudo install -m 600 /tmp/microstack-t3code.env /data/coolify/source/t3code.env
+          sudo install -m 600 -o "$(id -u)" -g "$(id -g)" /tmp/microstack-t3code.env /data/coolify/source/t3code.env
           docker compose -f docker-compose.yml config --quiet
           docker compose -f docker-compose.yml --profile monitoring-agent config --quiet
           sudo rm -f /data/coolify/source/.env /data/coolify/source/t3code.env
