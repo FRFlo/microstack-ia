@@ -36,9 +36,30 @@ Ouvrir une nouvelle session après modification. Les navigateurs MCP permettent 
 
 T3 Code expose lui-même un serveur `/mcp` pour un agent externe. Dans **Settings → Environments**, copier l'URL fournie et suivre l'authentification OAuth. Depuis l'extérieur de Docker, utiliser un tunnel ou une adresse HTTPS/T3 Connect accessible au client. Ce serveur donne accès à l'environnement T3 ; il ne remplace pas le MCP Coolify. Voir [Outside agents](https://github.com/pingdotgg/t3code/blob/main/docs/user/outside-agents.md).
 
-## Dockhand, Beszel et Docker
+## Dockhand
 
-Dockhand est accessible sur `http://dockhand:3000` et Beszel sur `http://beszel:8090` depuis T3. Leurs interfaces permettent à l'agent navigateur d'interagir avec les services après connexion. Dockhand référence aussi un [serveur MCP communautaire](https://dockhand.pro/manual/) séparé ; le Compose de ce dépôt ne le déploie pas. Beszel expose une [API REST](https://beszel.dev/guide/rest-api), dont l'URL n'est pas un serveur MCP.
+Le service `mcp-dockhand` de la stack utilise l'image communautaire [`ghcr.io/strausmann/mcp-dockhand:latest`](https://github.com/strausmann/mcp-dockhand). Il se connecte à `http://dockhand:3000` et expose son serveur Streamable HTTP sur le réseau partagé :
+
+```text
+http://mcp-dockhand:8080/mcp
+```
+
+Il ne publie aucun port sur l'hôte. Avant le déploiement de la stack, créer un jeton personnel dans **Dockhand → profil → API tokens**, puis renseigner ces deux variables sensibles dans Dockhand :
+
+| Variable | Usage |
+| --- | --- |
+| `DOCKHAND_API_TOKEN` | Jeton personnel Dockhand `dh_…`, utilisé par le serveur MCP pour joindre l'API. Il hérite des droits de son propriétaire. |
+| `DOCKHAND_MCP_TOKEN` | Secret aléatoire distinct, choisi pour authentifier les clients du serveur MCP. |
+
+Dans **Setup → MCP servers** de T3 ou dans la configuration native de l'agent, ajouter l'URL ci-dessus avec l'en-tête `Authorization: Bearer <valeur de DOCKHAND_MCP_TOKEN>`, puis ouvrir une nouvelle session. La liste d'hôtes du serveur autorise `mcp-dockhand:8080` ; une autre adresse nécessite d'adapter `MCP_ALLOWED_HOSTS`. La connexion interne utilise HTTP : son jeton circule en clair sur le réseau Docker. Pour un accès depuis un autre réseau, prévoir un transport chiffré et adapter l'allowlist ; ne pas publier directement le port.
+
+Les outils `list_environments`, `list_containers`, `list_git_stacks` et `sync_git_stack` permettent notamment d'inspecter et de gérer l'installation. La plupart des opérations Docker demandent un `environmentId` obtenu avec `list_environments`. `validate_config` vérifie les identifiants sans les afficher ; `self_check` vérifie également l'accès aux environnements. En mode jeton, certaines opérations liées au profil, aux rôles ou à l'authentification exigent une session Dockhand et doivent être effectuées dans son interface. Voir la [documentation amont](https://github.com/strausmann/mcp-dockhand#authentication).
+
+Le jeton MCP donne accès aux outils avec les droits du compte Dockhand associé, notamment à des opérations Docker étendues. Les deux secrets sont obligatoires dans Compose pour éviter de démarrer le serveur sans authentification. En cas de 401, vérifier le jeton MCP côté agent ; en cas de 403 sur `/mcp`, vérifier l'adresse utilisée et `MCP_ALLOWED_HOSTS`. Une erreur d'authentification Dockhand demande de vérifier le jeton personnel et ses droits.
+
+## Beszel et Docker
+
+Beszel est accessible sur `http://beszel:8090` depuis T3. Son interface permet à l'agent navigateur d'interagir avec le service après connexion. Beszel expose une [API REST](https://beszel.dev/guide/rest-api), dont l'URL n'est pas un serveur MCP.
 
 T3 monte `/var/run/docker.sock` : son agent peut joindre directement l'API Docker, sous réserve des permissions du socket. L'image ne garantit pas la commande `docker` ; ce contrôle utilise `curl` :
 

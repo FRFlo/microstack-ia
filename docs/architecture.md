@@ -7,6 +7,7 @@ Microstack IA utilise deux projets Compose. `docker-compose.dockhand.yml` est la
 | Service | Image | Réseaux | Accès publié sur l'hôte |
 | --- | --- | --- | --- |
 | Dockhand | `fnsys/dockhand:latest` | `microstack-control` | `127.0.0.1:8000 → 3000` |
+| MCP Dockhand | `ghcr.io/strausmann/mcp-dockhand:latest` | `microstack-control` | Aucun ; `mcp-dockhand:8080` en interne |
 | Coolify | `coollabsio/coolify:latest` | `coolify`, `microstack-control` | `127.0.0.1:8001 → 8080`, `6001 → 6001`, `6002 → 6002` |
 | PostgreSQL | `postgres:latest` | `coolify` | Aucun |
 | Redis | `redis:latest` | `coolify` | Aucun |
@@ -23,6 +24,8 @@ Coolify attend que PostgreSQL et Redis soient sains avant de démarrer. Ses cont
 | Variable | Valeur par défaut | Effet |
 | --- | --- | --- |
 | `T3_SETUP_KEY` | Vide | Clé de Setup ; vide laisse l'image générer et conserver une clé. |
+| `DOCKHAND_API_TOKEN` | Obligatoire | Jeton personnel Dockhand pour l'accès du serveur MCP à l'API. |
+| `DOCKHAND_MCP_TOKEN` | Obligatoire | Secret distinct requis pour accéder au serveur MCP Dockhand. |
 | `BESZEL_AGENT_KEY` | Vide | Clé publique fournie par le hub Beszel à son agent. |
 | `COMPOSE_PROFILES` | Vide | Mettre `monitoring-agent` après avoir défini `BESZEL_AGENT_KEY` pour démarrer l'agent. |
 

@@ -10,6 +10,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Vérifier le script et les fichiers Compose
+        env:
+          DOCKHAND_API_TOKEN: dh_validation
+          DOCKHAND_MCP_TOKEN: validation
         run: |
           bash -n scripts/deploy-dockhand.sh
           docker compose -f docker-compose.dockhand.yml config --quiet

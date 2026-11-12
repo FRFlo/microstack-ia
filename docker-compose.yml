@@ -1,4 +1,13 @@
 services:
+  mcp-dockhand:
+    image: ghcr.io/strausmann/mcp-dockhand:latest
+    restart: unless-stopped
+    environment:
+      DOCKHAND_URL: http://dockhand:3000
+      DOCKHAND_API_TOKEN: ${DOCKHAND_API_TOKEN:?Définir DOCKHAND_API_TOKEN dans Dockhand}
+      MCP_AUTH_TOKEN: ${DOCKHAND_MCP_TOKEN:?Définir DOCKHAND_MCP_TOKEN dans Dockhand}
+      MCP_ALLOWED_HOSTS: mcp-dockhand:8080
+    networks: [control]
   coolify:
     image: docker.io/coollabsio/coolify:latest
     container_name: coolify
