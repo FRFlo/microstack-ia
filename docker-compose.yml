@@ -31,6 +31,7 @@ services:
       coolify:
         aliases:
           - coolify-realtime
+      control: {}
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,11 +49,12 @@ services:
     restart: unless-stopped
     env_file:
       - /data/coolify/source/.env
+    entrypoint: ["/bin/sh", "-c", "export POSTGRES_USER=\"$${DB_USERNAME:-coolify}\" POSTGRES_DB=\"$${DB_DATABASE:-coolify}\" POSTGRES_PASSWORD=\"$${DB_PASSWORD:?DB_PASSWORD requis}\"; exec /usr/local/bin/docker-entrypoint.sh postgres"]
     volumes:
-      - coolify-db:/var/lib/postgresql/data
+      - coolify-db:/var/lib/postgresql
     networks: [coolify]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      test: ["CMD-SHELL", "pg_isready -U \"$${DB_USERNAME:-coolify}\" -d \"$${DB_DATABASE:-coolify}\""]
       interval: 5s
       retries: 10
       timeout: 2s
@@ -73,15 +75,29 @@ services:
       timeout: 2s
   t3code:
     image: ghcr.io/dizys/t3code-docker:latest
-    profiles: [agents]
     restart: unless-stopped
+    env_file:
+      - /data/coolify/source/t3code.env
+    environment:
+      T3_SETUP_KEY: ${T3_SETUP_KEY:-}
     ports:
       - "127.0.0.1:8003:3773"
+      - "127.0.0.1:8004:3774"
     volumes:
-      - t3code-data:/data/userdata
-      - t3code-workspace:/data/workspace
-      - t3code-home:/home/node
+      - t3code-workspace:/workspace
+      - t3code-home:/home/t3
+      - t3code-services:/var/lib/t3code/services
       - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks: [control]
+    shm_size: 1gb
+    stop_grace_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3773',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
       interval: 30s
@@ -95,7 +111,7 @@ services:
       - "127.0.0.1:8002:8090"
     volumes:
       - beszel-data:/beszel_data
-    networks: [monitoring]
+    networks: [monitoring, control]
     healthcheck:
       test: ["CMD", "/beszel", "health", "--url", "http://127.0.0.1:8090"]
       interval: 60s
@@ -119,9 +135,9 @@ services:
       retries: 3
       start_period: 15s
 volumes:
-  t3code-data: {}
   t3code-home: {}
   t3code-workspace: {}
+  t3code-services: {}
   beszel-data: {}
   beszel-agent-data: {}
   coolify-db:
@@ -133,3 +149,6 @@ networks:
   coolify:
     name: coolify
     driver: bridge
+  control:
+    name: microstack-control
+    external: true

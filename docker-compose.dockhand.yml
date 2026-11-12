@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8000:3000"
+    networks: [control]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /data/coolify:/data/coolify:ro
@@ -12,3 +13,8 @@ services:
 
 volumes:
   dockhand-data: {}
+
+networks:
+  control:
+    name: microstack-control
+    external: true

@@ -1,52 +1,40 @@
 # Microstack IA
 
-Stack auto-hébergée déployée depuis Git avec Dockhand, Beszel pour la supervision et T3 Code pour piloter des agents et proposer son serveur MCP.
+Stack auto-hébergée pilotée depuis Git avec Dockhand, Coolify, Beszel et T3 Code. L'objectif est de démarrer Dockhand par SSH, d'y ajouter ce dépôt, puis de confier la configuration et l'exploitation à un agent IA, avec votre assistance pour les comptes et autorisations.
 
-> **État : chantier initial.** Le déploiement complet et l'accès HTTPS restent à valider sur un serveur.
+> Le déploiement complet reste à valider sur votre serveur. Si la stack existe déjà, lire les [consignes de migration](docs/exploitation.md#migration-dune-installation-existante) avant de recréer les conteneurs.
 
-## Fichiers
+## Démarrage
 
-| Chemin | Rôle |
-| --- | --- |
-| `docker-compose.dockhand.yml` | Dockhand seul, pour le démarrage initial sur le serveur. |
-| `scripts/deploy-dockhand.sh` | Démarrage initial de Dockhand via SSH. |
-| `docker-compose.yml` | Coolify, PostgreSQL, Redis, Beszel et profils facultatifs ; à ajouter dans Dockhand depuis Git. |
-| `docs/exploitation.md` | Supervision, accès réseau et sauvegardes. |
-
-Les images tierces ont leurs propres licences.
-
-## Prérequis
-
-Serveur Linux, Docker Engine, plugin Docker Compose et accès SSH avec droits sudo. Prévoir DNS, ports TCP 80 et 443 si les services sont publiés par un proxy, et une sauvegarde externe.
-
-## Démarrage initial de Dockhand
-
-Sur le serveur, cloner le dépôt puis démarrer Dockhand :
+Prérequis : serveur Linux avec Docker Engine, plugin Docker Compose, OpenSSL, Git et accès SSH avec sudo. Sur le serveur :
 
 ```sh
-ssh utilisateur@serveur
 git clone <URL_DU_DEPOT> microstack-ia
 cd microstack-ia
 sudo ./scripts/deploy-dockhand.sh
 ```
 
-Le script prépare aussi les secrets et dossiers de Coolify sous `/data/coolify`. Sauvegarder `/data/coolify/source/.env` hors du serveur. Dockhand écoute uniquement sur `127.0.0.1:8000`. Depuis un second terminal local, ouvrir les tunnels SSH :
+Le script démarre Dockhand, crée le réseau partagé et prépare les dossiers et secrets Coolify dans `/data/coolify`. Il conserve les secrets Coolify existants. Sauvegardez `/data/coolify/source/.env` hors du serveur : ce fichier est lu directement par la stack, il ne faut pas recopier ses secrets dans Dockhand.
+
+Depuis votre poste, ouvrez les tunnels SSH :
 
 ```sh
-ssh -L 8000:127.0.0.1:8000 -L 8001:127.0.0.1:8001 -L 8002:127.0.0.1:8002 utilisateur@serveur
+ssh -L 6001:127.0.0.1:6001 -L 6002:127.0.0.1:6002 -L 8000:127.0.0.1:8000 -L 8001:127.0.0.1:8001 -L 8002:127.0.0.1:8002 -L 8003:127.0.0.1:8003 -L 8004:127.0.0.1:8004 utilisateur@serveur
 ```
 
-Ouvrir `http://localhost:8000`, créer le compte administrateur, puis ajouter la stack depuis le dépôt Git et choisir `docker-compose.yml`. Coolify sera accessible sur `http://localhost:8001` et Beszel sur `http://localhost:8002`. Dockhand déploiera et mettra ensuite à jour la stack selon sa configuration Git. Le volume `dockhand-data` conserve sa configuration.
+1. Ouvrez `http://localhost:8000`, créez le compte administrateur Dockhand et ajoutez ce dépôt comme stack Git en choisissant `docker-compose.yml`.
+2. Dans les variables sensibles de la stack, définissez si souhaité `T3_SETUP_KEY` pour protéger la configuration T3. Déployez la stack. Le fichier `/data/coolify/source/t3code.env`, créé par le script et lu par Dockhand, configure les identifiants d'accès au socket Docker.
+3. Ouvrez la configuration T3 sur `http://localhost:8004`, récupérez la clé générée dans les journaux T3 si `T3_SETUP_KEY` est vide, installez les agents souhaités et connectez leurs fournisseurs. Les installations initiales se terminent en arrière-plan. Ouvrez T3 sur `http://localhost:8003`, ajoutez ou clonez ce dépôt dans un projet, puis utilisez le [prompt de démarrage](docs/assistant-ia.md).
+4. Créez vos comptes Coolify et Beszel sur les ports 8001 et 8002. Pour superviser le serveur avec Beszel Agent, suivez les étapes du [guide d'exploitation](docs/exploitation.md#beszel).
 
-## T3 Code et agents
+Les comptes, connexions aux fournisseurs IA, autorisations OAuth et clé Beszel demandent une action humaine. L'agent peut ensuite aider à configurer et exploiter la stack selon les accès accordés.
 
-Définir `COMPOSE_PROFILES=agents` dans les variables de la stack Dockhand pour démarrer T3 Code. Ajouter `-L 8003:127.0.0.1:8003` au tunnel SSH pour y accéder. Les instructions d'appairage figurent dans les journaux de T3 Code. Ouvrir une console dans le conteneur T3 Code depuis Dockhand et lancer la connexion souhaitée :
+## Guides
 
-```sh
-codex login
-claude auth login
-```
+- [Assistant IA et prompt initial](docs/assistant-ia.md)
+- [Inventaire et configuration des MCP](docs/mcp.md)
+- [Exploitation, ports, sauvegardes et migration](docs/exploitation.md)
+- [Compatibilité et capacités des images](docs/images.md)
+- [Instructions pour les agents](AGENTS.md)
 
-Suivre les instructions affichées, sans transmettre de code ou de secret dans une issue. Les identifiants sont conservés dans le volume personnel de T3 Code. T3 Code inclut un serveur MCP OAuth sur `/mcp`.
-
-Voir [exploitation](docs/exploitation.md) pour la supervision, les sauvegardes et les accès réseau. Ne partagez pas de journaux contenant des secrets. Licence du projet : [Apache 2.0](LICENSE).
+Les images tierces ont leurs propres licences. Licence du projet : [Apache 2.0](LICENSE).
