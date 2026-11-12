@@ -31,8 +31,9 @@ Les comptes, connexions aux fournisseurs IA, autorisations OAuth et clé Beszel 
 
 ## Guides
 
-- [Assistant IA et prompt initial](docs/assistant-ia.md)
-- [Inventaire et configuration des MCP](docs/mcp.md)
+- [Architecture, réseaux, variables et volumes](docs/architecture.md)
+- [T3 Code et agents dans la stack](docs/assistant-ia.md)
+- [MCP de la stack et accès des agents](docs/mcp.md)
 - [Exploitation, ports, sauvegardes et migration](docs/exploitation.md)
 - [Compatibilité et capacités des images](docs/images.md)
 - [Instructions pour les agents](AGENTS.md)

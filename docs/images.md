@@ -1,6 +1,6 @@
-# Images : correspondance avec les projets amont
+# Images et limites de la stack
 
-Revue des configurations et documentations amont. Les tags `latest` sont conservés conformément au choix du projet : leur contenu évolue et cette revue ne garantit pas les versions téléchargées lors d'un futur déploiement.
+Ce guide décrit les choix de `docker-compose.yml` et de `docker-compose.dockhand.yml` par rapport aux images utilisées. Tous les tags sont `latest` : leur contenu évolue au prochain téléchargement. Les réseaux, variables et volumes figurent dans [architecture](architecture.md).
 
 ## Dockhand
 
