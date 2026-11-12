@@ -1,27 +1,29 @@
-# MCP disponibles et configuration
+# Configuration MCP pour les agents
 
-Un MCP est un serveur exposant des outils à un agent. Un socket Docker, une interface web ou un service ne sont pas en eux-mêmes des serveurs MCP.
+À l'ouverture de ce projet, configure les serveurs MCP utiles dans ta propre configuration d'agent. Conserve les autres serveurs déjà présents et utilise les outils MCP disponibles pour accomplir la tâche demandée.
 
-| Serveur | Disponibilité | Mise en service |
-| --- | --- | --- |
-| T3 Code `/mcp` | Serveur proposé par T3 Code aux agents externes | Dans T3, Settings → Environments, copier l'URL et suivre l'autorisation OAuth. Pour un agent externe, utiliser un tunnel local ou une connexion HTTPS/T3 Connect adaptée. |
-| Playwright | Fourni par l'image T3 `latest` | Après installation d'un agent, ouvrir le terminal du conteneur dans Dockhand et exécuter `t3-browser-mcp`, puis démarrer une nouvelle session d'agent. |
-| Chrome DevTools | Fourni par l'image T3 `latest` | Alternative : `t3-browser-mcp --server chrome-devtools --harness claude`, puis nouvelle session. L'association avec Chromium est moins éprouvée selon la documentation de l'image. |
+## Procédure
 
-L'installation des agents et l'enregistrement des serveurs navigateur sont des étapes distinctes. Vérifiez dans chaque agent les outils effectivement exposés ; leur présence dans l'image ne signifie pas qu'ils sont enregistrés ou connectés.
+1. Identifie ton agent, son fichier ou sa commande de configuration MCP, et les serveurs déjà déclarés. Si tu utilises T3, tu peux aussi gérer ces déclarations dans **Setup → MCP servers**, puis les appliquer à l'agent concerné.
+2. Identifie les serveurs nécessaires à la tâche et vérifie leur adresse, leur transport et leur méthode d'authentification dans leur documentation ou leur configuration effective.
+3. Ajoute chaque serveur à ta propre configuration, sans écraser les entrées existantes. Utilise les noms et adresses accessibles depuis ton environnement d'exécution.
+4. Effectue l'authentification requise par le serveur. Utilise les mécanismes de secrets de l'agent ou du service ; ne place aucun jeton dans le dépôt, une commande enregistrée ou la conversation.
+5. Recharge la configuration ou démarre une nouvelle session si ton agent l'exige, puis vérifie les outils effectivement exposés. Signale les étapes qui nécessitent une connexion ou une autorisation de l'utilisateur.
 
-## Ajouter un MCP
+Par exemple, si Coolify expose effectivement un serveur MCP HTTP sur `http://coolify:8080/mcp`, configure cette URL comme serveur HTTP dans l'agent exécuté sur le réseau partagé. Le chemin `/mcp` est ici un exemple à vérifier : l'adresse de l'interface Coolify ne garantit pas qu'un serveur MCP y soit actif.
 
-La page Setup → MCP servers de T3 permet de déclarer des serveurs locaux ou HTTP Streamable et de les appliquer aux agents choisis. Leur installation, leur lancement et leur authentification restent à organiser selon chaque serveur. Une autorisation OAuth peut être nécessaire pour chaque agent. Ne placez pas de secrets dans les commandes enregistrées ni dans le dépôt ; utilisez les mécanismes de secrets du service concerné.
+Depuis T3, les interfaces de la stack sont accessibles aux adresses `http://dockhand:3000`, `http://coolify:8080` et `http://beszel:8090`. Ces adresses désignent des interfaces web ; pour chacune, vérifie l'existence et l'URL du MCP avant de l'ajouter. Depuis un agent extérieur au réseau Docker, utilise une adresse accessible depuis cet agent.
 
-Aucun serveur MCP Docker, Dockhand, Coolify, Beszel, PostgreSQL ou Redis n'est déclaré par ce dépôt. Vous pouvez en ajouter un après avoir choisi sa source et ses permissions. Les interfaces web restent accessibles aux outils de navigateur sur le réseau partagé : `http://dockhand:3000`, `http://coolify:8080` et `http://beszel:8090`. Le navigateur de l'agent possède sa propre session : votre connexion dans votre navigateur personnel ne l'authentifie pas automatiquement.
+## Serveurs navigateur et T3 Code
 
-T3 dispose du socket Docker de l'hôte, sous réserve des permissions du socket. L'image ne garantit pas la présence de la commande `docker` ; depuis son terminal, le diagnostic `curl --unix-socket /var/run/docker.sock http://localhost/_ping` interroge directement l'API. L'accès à cette API donne des pouvoirs étendus sur l'hôte.
+L'image T3 `latest` fournit Playwright et Chrome DevTools. Après l'installation des agents, exécute `t3-browser-mcp` dans le terminal du conteneur pour enregistrer Playwright auprès des agents pris en charge. Pour Chrome DevTools avec Claude, utilise `t3-browser-mcp --server chrome-devtools --harness claude`. Démarre ensuite une nouvelle session. Le navigateur intégré à T3 est distinct de ces MCP et ne partage pas automatiquement la session du navigateur personnel de l'utilisateur.
 
-## Documentation amont
+Pour connecter un agent externe au MCP de T3 Code, récupère l'URL dans **Settings → Environments**, configure-la dans l'agent et suis la procédure OAuth. L'agent externe doit pouvoir joindre T3 par une connexion adaptée, par exemple un tunnel ou HTTPS/T3 Connect.
+
+L'accès au socket Docker dans T3 permet aussi d'interroger l'API Docker, mais ne constitue pas un MCP. La commande `curl --unix-socket /var/run/docker.sock http://localhost/_ping` permet d'en vérifier l'accès ; la présence de la commande `docker` dans l'image n'est pas garantie.
+
+## Références
 
 - [Configuration MCP de l'image T3](https://github.com/dizys/t3code-docker/blob/main/docs/mcp-servers.md)
 - [MCP navigateur de l'image T3](https://github.com/dizys/t3code-docker/blob/main/docs/agent-browser.md)
 - [Serveur MCP de T3 Code pour agents externes](https://github.com/pingdotgg/t3code/blob/main/docs/user/outside-agents.md)
-
-Les versions récentes de T3 proposent aussi un navigateur intégré dans le panneau Browser ; il est distinct des serveurs MCP ci-dessus et peut nécessiter une configuration du sandbox navigateur sur l’hôte. Voir la [documentation navigateur amont](https://github.com/dizys/t3code-docker/blob/main/docs/agent-browser.md).
