@@ -19,8 +19,12 @@ services:
       - /data/coolify/source/.env
     environment:
       APP_ENV: production
+      APP_URL: https://coolify.${STACK_DOMAIN:?Définir STACK_DOMAIN dans Dockhand}
       PHP_MEMORY_LIMIT: 256M
       PUSHER_BACKEND_PORT: 6001
+      PUSHER_HOST: coolify-realtime.${STACK_DOMAIN}
+      PUSHER_PORT: 443
+      TERMINAL_PORT: 443
     ports:
       - "127.0.0.1:8001:8080"
       - "127.0.0.1:6001:6001"
@@ -89,6 +93,7 @@ services:
       - /data/coolify/source/t3code.env
     environment:
       T3_SETUP_KEY: ${T3_SETUP_KEY:-}
+      T3_PUBLIC_URL: https://t3.${STACK_DOMAIN}
     ports:
       - "127.0.0.1:8003:3773"
       - "127.0.0.1:8004:3774"
@@ -116,6 +121,8 @@ services:
   beszel:
     image: henrygd/beszel:latest
     restart: unless-stopped
+    environment:
+      APP_URL: https://beszel.${STACK_DOMAIN}
     ports:
       - "127.0.0.1:8002:8090"
     volumes:

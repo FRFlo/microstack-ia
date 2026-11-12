@@ -1,6 +1,6 @@
 # Les MCP de Microstack IA
 
-T3 Code et les agents s'exécutent dans `t3code`, sur le réseau Docker `microstack-control`. Depuis ce conteneur, Coolify répond sur `coolify:8080`, Dockhand sur `dockhand:3000` et Beszel sur `beszel:8090`. Ces noms ne sont valables que sur ce réseau. Depuis le poste de l'utilisateur, les interfaces passent par le tunnel SSH décrit dans le [README](../README.md).
+T3 Code et les agents s'exécutent dans `t3code`, sur le réseau Docker `microstack-control`. Depuis ce conteneur, Coolify répond sur `coolify:8080`, Dockhand sur `dockhand:3000` et Beszel sur `beszel:8090`. Ces noms ne sont valables que sur ce réseau. Depuis le poste de l'utilisateur, les interfaces passent par [Cloudflare Tunnel](cloudflare.md) ou par le tunnel SSH du [README](../README.md).
 
 ## Coolify
 

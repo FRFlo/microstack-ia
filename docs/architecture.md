@@ -24,6 +24,7 @@ Coolify attend que PostgreSQL et Redis soient sains avant de démarrer. Ses cont
 | Variable | Valeur par défaut | Effet |
 | --- | --- | --- |
 | `T3_SETUP_KEY` | Vide | Clé de Setup ; vide laisse l'image générer et conserver une clé. |
+| `STACK_DOMAIN` | Obligatoire | Domaine sans protocole ; Compose dérive les URL publiques de Coolify, T3 et Beszel. Les routes et règles Cloudflare sont configurées séparément. |
 | `DOCKHAND_API_TOKEN` | Obligatoire | Jeton personnel Dockhand pour l'accès du serveur MCP à l'API. |
 | `DOCKHAND_MCP_TOKEN` | Obligatoire | Secret distinct requis pour accéder au serveur MCP Dockhand. |
 | `BESZEL_AGENT_KEY` | Vide | Clé publique fournie par le hub Beszel à son agent. |
@@ -32,6 +33,8 @@ Coolify attend que PostgreSQL et Redis soient sains avant de démarrer. Ses cont
 Ces variables sont définies dans Dockhand. Les secrets Coolify ne sont pas définis ici : ils sont lus à partir de `/data/coolify/source/.env` sur l'hôte. Le script conserve ce fichier s'il existe déjà ; il régénère `/data/coolify/source/t3code.env` avec l'identité du socket. Dockhand monte `/data/coolify` en lecture seule pour que son processus Compose puisse lire ces fichiers.
 
 Le bootstrap crée des dossiers sous `/data/coolify` avec UID 9999 et groupe 0. Il génère notamment les valeurs Coolify `APP_KEY`, `DB_PASSWORD`, `REDIS_PASSWORD` et `PUSHER_*`. PostgreSQL traduit les variables `DB_USERNAME`, `DB_DATABASE` et `DB_PASSWORD` du fichier Coolify en variables d'initialisation `POSTGRES_*`. Redis utilise `REDIS_PASSWORD`. Les changements d'identifiants ne migrent pas automatiquement les données ou les utilisateurs d'une base existante.
+
+Les noms publics et routes vers les ports locaux sont détaillés dans [Cloudflare Tunnel](cloudflare.md). `T3_PUBLIC_URL` et l'`APP_URL` Beszel utilisent le domaine ; Coolify reçoit son `APP_URL`, le nom Reverb, le port public 443 et le port de terminal public 443. Ces valeurs ne créent pas les DNS ou politiques Access et ne remplacent pas les réglages persistants des interfaces.
 
 ## Données persistantes
 

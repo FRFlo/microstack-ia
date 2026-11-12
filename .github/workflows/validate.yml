@@ -13,6 +13,7 @@ jobs:
         env:
           DOCKHAND_API_TOKEN: dh_validation
           DOCKHAND_MCP_TOKEN: validation
+          STACK_DOMAIN: example.com
         run: |
           bash -n scripts/deploy-dockhand.sh
           docker compose -f docker-compose.dockhand.yml config --quiet
