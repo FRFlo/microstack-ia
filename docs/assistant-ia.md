@@ -1,6 +1,6 @@
 # T3 Code dans Microstack IA
 
-La stack démarre `ghcr.io/dizys/t3code-docker:latest` sans profil Compose. Son interface écoute sur `127.0.0.1:8003` et Setup sur `127.0.0.1:8004` de l'hôte. Le [guide Cloudflare](cloudflare.md) décrit leurs noms publics et le [README](../README.md) donne un tunnel SSH de dépannage. Au premier démarrage, l'image installe les agents et les outils par défaut en arrière-plan dans le volume personnel. La page Setup affiche leur progression et permet de connecter les fournisseurs.
+La stack démarre `ghcr.io/dizys/t3code-docker:latest` sans profil Compose. Son port unifié écoute sur `127.0.0.1:8003` : T3 est à la racine et Setup sur `/__setup`. Le [guide Cloudflare](cloudflare.md) décrit leurs noms publics et le [README](../README.md) donne un tunnel SSH de dépannage. Au premier démarrage, l'image installe les agents et les outils par défaut en arrière-plan dans le volume personnel. La page Setup affiche leur progression et permet de connecter les fournisseurs.
 
 | Montage Compose | Chemin dans T3 | Contenu |
 | --- | --- | --- |

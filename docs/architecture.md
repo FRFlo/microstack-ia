@@ -8,16 +8,17 @@ Microstack IA utilise deux projets Compose. `docker-compose.dockhand.yml` est la
 | --- | --- | --- | --- |
 | Dockhand | `fnsys/dockhand:latest` | `microstack-control` | `127.0.0.1:8000 → 3000` |
 | MCP Dockhand | `ghcr.io/strausmann/mcp-dockhand:latest` | `microstack-control` | Aucun ; `mcp-dockhand:8080` en interne |
-| Coolify | `coollabsio/coolify:latest` | `coolify`, `microstack-control` | `127.0.0.1:8001 → 8080`, `6001 → 6001`, `6002 → 6002` |
+| Coolify | `coollabsio/coolify:latest` | `coolify`, `microstack-control` | Aucun |
+| Proxy Coolify | `nginx:latest` | `coolify` | `127.0.0.1:8001 → 8080` |
 | PostgreSQL | `postgres:latest` | `coolify` | Aucun |
 | Redis | `redis:latest` | `coolify` | Aucun |
-| T3 Code | `ghcr.io/dizys/t3code-docker:latest` | `microstack-control` | `127.0.0.1:8003 → 3773`, `8004 → 3774` |
+| T3 Code | `ghcr.io/dizys/t3code-docker:latest` | `microstack-control` | `127.0.0.1:8003 → 8080` (interface et `/__setup`) |
 | Beszel | `henrygd/beszel:latest` | `monitoring`, `microstack-control` | `127.0.0.1:8002 → 8090` |
 | Beszel Agent | `henrygd/beszel-agent:latest` | `monitoring` | Aucun ; profil `monitoring-agent` |
 
 Tous les ports de ce tableau sont liés à `127.0.0.1`. Depuis T3, les noms `dockhand:3000`, `coolify:8080` et `beszel:8090` passent par `microstack-control`, créé par le bootstrap en réseau externe. Le réseau `coolify` relie l'application à `postgres` et `redis` ; `monitoring` relie Beszel à `beszel-agent`. T3 n'est pas sur ces deux réseaux. `host.docker.internal` est défini pour Coolify et T3, mais un service lié au loopback de l'hôte n'est pas automatiquement accessible par cette adresse depuis un conteneur.
 
-Coolify attend que PostgreSQL et Redis soient sains avant de démarrer. Ses contrôles vérifient `/api/health` et le service temps réel sur le port 6001 ; T3 vérifie le port 3773 ; Beszel et son agent utilisent leurs commandes `health`. Un état sain indique seulement que le contrôle configuré réussit.
+Coolify attend que PostgreSQL et Redis soient sains avant de démarrer. Ses contrôles vérifient `/api/health` et le service temps réel sur le port 6001 ; T3 vérifie le port unifié 8080 ; Beszel et son agent utilisent leurs commandes `health`. Un état sain indique seulement que le contrôle configuré réussit.
 
 ## Variables de la stack Git
 
@@ -34,7 +35,7 @@ Ces variables sont définies dans Dockhand. Les secrets Coolify ne sont pas déf
 
 Le bootstrap crée des dossiers sous `/data/coolify` avec UID 9999 et groupe 0. Il génère notamment les valeurs Coolify `APP_KEY`, `DB_PASSWORD`, `REDIS_PASSWORD` et `PUSHER_*`. PostgreSQL traduit les variables `DB_USERNAME`, `DB_DATABASE` et `DB_PASSWORD` du fichier Coolify en variables d'initialisation `POSTGRES_*`. Redis utilise `REDIS_PASSWORD`. Les changements d'identifiants ne migrent pas automatiquement les données ou les utilisateurs d'une base existante.
 
-Les noms publics et routes vers les ports locaux sont détaillés dans [Cloudflare Tunnel](cloudflare.md). `T3_PUBLIC_URL` et l'`APP_URL` Beszel utilisent le domaine ; Coolify reçoit son `APP_URL`, le nom Reverb, le port public 443 et le port de terminal public 443. Ces valeurs ne créent pas les DNS ou politiques Access et ne remplacent pas les réglages persistants des interfaces.
+Les noms publics et routes vers les ports locaux sont détaillés dans [Cloudflare Tunnel](cloudflare.md). `T3_PUBLIC_URL` et l'`APP_URL` Beszel utilisent le domaine ; Coolify reçoit son `APP_URL`, le nom Reverb, le port public 443 et le port de terminal public 443. Le proxy `coolify-proxy` transmet `/app/` au port interne 6001, `/terminal/ws` au port interne 6002 et les autres requêtes au port 8080. Ces valeurs ne créent pas les DNS ou politiques Access et ne remplacent pas les réglages persistants des interfaces.
 
 ## Données persistantes
 
@@ -56,4 +57,5 @@ Les noms effectifs des volumes sans `name:` dépendent du nom du projet Compose.
 | `scripts/deploy-dockhand.sh` | Prépare les fichiers hôte et démarre Dockhand. |
 | `docker-compose.dockhand.yml` | Projet du bootstrap Dockhand. |
 | `docker-compose.yml` | Stack Git déployée depuis Dockhand. |
+| `config/coolify-proxy.conf` | Routage HTTP et WebSocket de Coolify sur le port hôte 8001. |
 | `.github/workflows/validate.yml` | Validation Compose et syntaxe du script dans la CI. |

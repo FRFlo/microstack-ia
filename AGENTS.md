@@ -6,7 +6,7 @@ Ce dépôt prépare une stack auto-hébergée gérée depuis Dockhand. Lire le R
 
 - `scripts/deploy-dockhand.sh` initialise les dossiers, les secrets Coolify, la configuration locale T3, le réseau partagé et Dockhand.
 - `docker-compose.dockhand.yml` décrit le bootstrap Dockhand ; `docker-compose.yml` décrit la stack Git Coolify, PostgreSQL, Redis, T3 et Beszel.
-- Dockhand, Coolify, Beszel et T3 sont accessibles sur les ports locaux 8000 à 8004 ; voir le guide d'exploitation pour leur rôle et le réseau interne.
+- Dockhand, Coolify, Beszel et T3 sont accessibles sur les ports locaux 8000 à 8003 ; T3 Setup utilise `/__setup` sur le port 8003. Voir le guide d'exploitation pour le réseau interne.
 - Le workspace T3 et la copie du dépôt utilisée par Dockhand sont distincts. Une modification de code ne déploie pas automatiquement la stack.
 
 ## Méthode

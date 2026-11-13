@@ -9,29 +9,44 @@ Dans les variables de la stack Git Dockhand, définir **`STACK_DOMAIN`**, sans p
 | Nom public | Destination du connecteur installé sur l'hôte | Usage |
 | --- | --- | --- |
 | `dockhand.<STACK_DOMAIN>` | `http://127.0.0.1:8000` | Dockhand, y compris avant le déploiement Git |
-| `coolify.<STACK_DOMAIN>/terminal/ws` | `http://127.0.0.1:6002` | Terminal Coolify ; route plus spécifique |
-| `coolify.<STACK_DOMAIN>` | `http://127.0.0.1:8001` | Interface et MCP Coolify |
-| `coolify-realtime.<STACK_DOMAIN>` | `http://127.0.0.1:6001` | WebSocket Reverb Coolify |
+| `coolify.<STACK_DOMAIN>` | `http://127.0.0.1:8001` | Interface, MCP, WebSocket Reverb et terminal Coolify |
 | `beszel.<STACK_DOMAIN>` | `http://127.0.0.1:8002` | Interface Beszel |
-| `t3.<STACK_DOMAIN>` | `http://127.0.0.1:8003` | Interface T3 et son serveur MCP |
-| `t3-setup.<STACK_DOMAIN>` | `http://127.0.0.1:8004` | Configuration T3 |
+| `t3.<STACK_DOMAIN>` | `http://127.0.0.1:8003` | Interface T3, MCP et configuration sur `/__setup` |
 
 `127.0.0.1` désigne ici l'hôte où tournent Docker **et** `cloudflared`. Un connecteur dans un conteneur a son propre loopback : il ne peut pas utiliser ces destinations sans configuration réseau adaptée. Les MCP Docker et Dockhand restent sur le réseau Docker interne ; ils n'ont pas de route publique dans ce tableau.
+
+## Coolify derrière le tunnel
+
+[Coolify recommande](https://coolify.io/docs/core/instance-management/reverb-migration) de diriger le tunnel vers son proxy géré sur le port 80. Ce proxy rassemble l'interface, les WebSockets et le terminal sur un même nom : `/app/*` va à Reverb sur 6001, `/terminal/ws` au terminal sur 6002 et les autres chemins à Coolify sur 8080. Les ports 6001 et 6002 ne sont alors pas nécessaires côté hôte.
+
+Cette stack reprend ce routage pour le tableau de bord avec son service `coolify-proxy` Nginx, disponible uniquement sur `127.0.0.1:8001`. La route Cloudflare `coolify.<STACK_DOMAIN>` cible donc `http://127.0.0.1:8001`. Le proxy Nginx de ce dépôt est séparé du proxy Traefik ou Caddy que Coolify peut installer et gérer pour les applications : il ne route pas automatiquement les applications créées dans Coolify.
+
+Pour publier ces applications, configurer le serveur et démarrer le proxy géré par Coolify, puis suivre son [guide Tunnel pour toutes les ressources](https://coolify.io/docs/integrations/networking/cloudflare/tunnels/all-resource). Ce guide fait pointer les routes des applications vers le port 80 du proxy Coolify et configure les domaines dans Coolify. Vérifier l'accès SSH de Coolify à l'hôte, les ports réellement disponibles, les enregistrements DNS existants et le mode de publication du proxy avant de modifier les routes. Les politiques Access des applications dépendent de leurs utilisateurs et clients ; un wildcard ne rend pas automatiquement ces applications privées. Le proxy Nginx de ce dépôt ne fournit pas cette configuration.
 
 ## Mise en place
 
 1. Conserver une session SSH fonctionnelle pour le bootstrap et le dépannage. Lancer `sudo ./scripts/deploy-dockhand.sh` depuis le dépôt : Dockhand écoute sur le port local 8000.
 2. Dans Cloudflare, choisir un tunnel existant connecté au même hôte ou créer un tunnel géré à distance, puis installer son connecteur sur cet hôte selon les instructions du tableau de bord. Vérifier qu'il est connecté avant d'ajouter les routes. Un tunnel déjà utilisé par un autre serveur ne donne pas automatiquement accès au loopback de ce serveur : éviter de connecter des machines aux origines différentes au même tunnel sans concevoir le routage.
-3. Dans **Networking → Tunnels**, ajouter les routes Published application du tableau. Créer ou vérifier les enregistrements DNS associés, normalement des CNAME proxifiés vers le tunnel. Pour Coolify, placer `/terminal/ws` avant la route générale si l'interface demande un ordre ; la correspondance par chemin doit conserver le chemin. Éviter d'écraser des DNS ou routes déjà utilisés.
-4. Dans Cloudflare Zero Trust, créer les applications **Access self-hosted** et leurs règles *Allow* pour les identités autorisées avant de publier les routes. Protéger Dockhand, Coolify, Coolify Realtime, Beszel, T3 et T3 Setup ; limiter T3 Setup et Dockhand aux administrateurs. Vérifier l'ordre des règles et tester avec un compte non autorisé. Tunnel et DNS ne créent pas à eux seuls une authentification Access. Conserver aussi l'authentification native de chaque service.
+3. Dans **Networking → Tunnels**, ajouter les routes Published application du tableau. Créer ou vérifier les enregistrements DNS associés, normalement des CNAME proxifiés vers le tunnel. Éviter d'écraser des DNS ou routes déjà utilisés.
+4. Dans Cloudflare Zero Trust, créer les applications **Access self-hosted** et leurs règles *Allow* pour les identités autorisées avant de publier les routes. Protéger Dockhand, Coolify, Beszel et T3. Créer aussi une application Access plus spécifique pour `t3.<STACK_DOMAIN>/__setup*`, limitée aux administrateurs, et vérifier qu’elle couvre `/__setup` ainsi que ses sous-chemins ; appliquer une règle appropriée au reste de T3. Vérifier la priorité effective des applications selon la documentation Cloudflare et tester avec un utilisateur autorisé à T3 mais pas à Setup. Limiter Dockhand aux administrateurs. Vérifier l'ordre des règles et tester avec un compte non autorisé. Tunnel et DNS ne créent pas à eux seuls une authentification Access. Conserver aussi l'authentification native de chaque service.
 5. Via `https://dockhand.<STACK_DOMAIN>`, créer l'administrateur puis une stack Git pointant vers `docker-compose.yml`. Saisir `STACK_DOMAIN`, les deux secrets MCP Dockhand et les autres variables nécessaires. Déployer puis configurer les services. Régler l'URL de l'instance Coolify dans son interface sur `https://coolify.<STACK_DOMAIN>` si nécessaire ; une variable d'environnement ne crée ni route Cloudflare ni configuration persistante dans son interface.
-6. Vérifier les six noms publics après authentification, puis les WebSockets T3, Beszel et Coolify, les mises à jour en direct et le terminal Coolify. `PUSHER_HOST`, `PUSHER_PORT=443` et `TERMINAL_PORT=443` sont fournis à Coolify par Compose. La route `/terminal/ws` vers 6002 et l'hôte Reverb vers 6001 suivent la [documentation Coolify](https://coolify.io/docs/core/instance-management/reverb-migration). Autoriser les WebSockets sur la zone. Une page de connexion Access renvoyée à un client WebSocket peut empêcher son fonctionnement : adapter l'authentification et tester chaque flux, sans désactiver aveuglément les protections.
+6. Vérifier les quatre noms publics après authentification, puis les WebSockets T3, Beszel et Coolify, les mises à jour en direct et le terminal Coolify. `PUSHER_HOST`, `PUSHER_PORT=443` et `TERMINAL_PORT=443` sont fournis à Coolify par Compose. Vérifier dans le navigateur que `/app/…` se connecte en `wss` sur 443 et que `/terminal/ws` fonctionne. Autoriser les WebSockets sur la zone. Une page de connexion Access renvoyée à un client WebSocket peut empêcher son fonctionnement : adapter l'authentification et tester chaque flux, sans désactiver aveuglément les protections.
 
-Le TLS est terminé chez Cloudflare ; entre `cloudflared` et les ports loopback, ces origines utilisent HTTP. Les ports ne sont pas publiés sur l'interface réseau publique du serveur. Ne pas ouvrir 8000–8004, 6001 ou 6002 sur Internet.
+Le TLS est terminé chez Cloudflare ; entre `cloudflared` et les ports loopback, ces origines utilisent HTTP. Les ports ne sont pas publiés sur l'interface réseau publique du serveur. Ne pas ouvrir 8000–8003 sur Internet.
 
 ## Clients non interactifs
 
 Les règles Access prévues pour un navigateur peuvent bloquer les clients MCP, les clients mobiles T3 et les webhooks. Définir un accès machine ciblé selon les besoins : par exemple un **service token Access** pour un client capable d'envoyer `CF-Access-Client-Id` et `CF-Access-Client-Secret`, avec une règle Service Auth limitée à l'application concernée. Ne pas exposer ces secrets dans Git ou dans le prompt de l'agent. Si un client ne peut pas envoyer ces en-têtes, choisir une autre voie compatible, par exemple accès interne, WARP ou tunnel privé, en conservant l'authentification propre au service. Tester séparément les connexions navigateur, MCP et WebSocket ; une connexion navigateur autorisée ne prouve pas qu'un client natif fonctionne.
+
+## Migration de T3 vers le port unifié
+
+Après redéploiement, faire pointer `t3.<STACK_DOMAIN>` vers `http://127.0.0.1:8003` et protéger également `t3.<STACK_DOMAIN>/__setup*` dans Access. Tester `https://t3.<STACK_DOMAIN>/__setup` avec les comptes autorisés et refusés, puis retirer l’ancienne route et l’application `t3-setup.<STACK_DOMAIN>` si elles existent. Le port hôte 8004 n’est plus publié.
+
+Le port unifié fait confiance aux en-têtes de proxy pour que Setup reconnaisse HTTPS et marque ses cookies comme sécurisés. Son port hôte reste sur loopback ; les conteneurs du réseau `microstack-control` peuvent toutefois joindre directement T3 et doivent être de confiance. Les ports internes 3773 et 3774 de l’image restent accessibles aux conteneurs de ce réseau.
+
+## Migration depuis les anciennes routes Coolify
+
+Après redéploiement de la stack, faire pointer `coolify.<STACK_DOMAIN>` vers `http://127.0.0.1:8001` et retirer la route plus spécifique `/terminal/ws` vers 6002 afin que le terminal atteigne le nouveau proxy. Vérifier l’interface, les WebSockets et le terminal avec les règles Access ; retirer ensuite l’ancien hôte `coolify-realtime.<STACK_DOMAIN>` s’il n’est plus utilisé. Le proxy reçoit les trois flux sur 8001 ; les ports hôte 6001 et 6002 ne sont plus publiés.
 
 ## Modification du domaine ou récupération
 
