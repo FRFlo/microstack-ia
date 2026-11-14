@@ -25,6 +25,10 @@ services:
       PUSHER_HOST: coolify.${STACK_DOMAIN}
       PUSHER_PORT: 443
       TERMINAL_PORT: 443
+    ports:
+      - "127.0.0.1:8001:8080"
+      - "127.0.0.1:6001:6001"
+      - "127.0.0.1:6002:6002"
     volumes:
       - /data/coolify/source/.env:/var/www/html/.env:ro
       - /data/coolify/ssh:/var/www/html/storage/app/ssh
@@ -49,17 +53,6 @@ services:
       retries: 24
       start_period: 1m
       timeout: 2s
-  coolify-proxy:
-    image: nginx:latest
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:8001:8080"
-    volumes:
-      - ./config/coolify-proxy.conf:/etc/nginx/conf.d/default.conf:ro
-    networks: [coolify]
-    depends_on:
-      coolify:
-        condition: service_healthy
   postgres:
     image: postgres:latest
     container_name: coolify-db
